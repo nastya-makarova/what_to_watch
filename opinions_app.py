@@ -2,7 +2,7 @@ from datetime import datetime
 # Импортируется функция для выбора случайного значения:
 from random import randrange
 
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, flash, redirect, render_template, url_for
 # Импортируем класс для работы с ORM:
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
