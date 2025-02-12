@@ -64,6 +64,12 @@ def add_opinion_view():
     form = OpinionForm()
     # Если ошибок не возникло...
     if form.validate_on_submit():
+        text = form.text.data
+        if Opinion.query.filter_by(text=text).first() is not None:
+            # ...вызвать функцию flash и передать соответствующее сообщение:
+            flash('Такое мнение уже было оставлено ранее!')
+            # Вернуть пользователя на страницу «Добавить новое мнение»:
+            return render_template('add_opinion.html', form=form)
         # ...то нужно создать новый экземпляр класса Opinion:
         opinion = Opinion(
             title=form.title.data,
