@@ -2,7 +2,7 @@ from datetime import datetime
 # Импортируется функция для выбора случайного значения:
 from random import randrange
 
-from flask import Flask, flash, redirect, render_template, url_for
+from flask import Flask, abort, flash, redirect, render_template, url_for
 # Импортируем класс для работы с ORM:
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -49,8 +49,9 @@ def index_view():
     quantity = Opinion.query.count()
     # Если мнений нет...
     if not quantity:
-        # ...то возвращается сообщение:
-        return 'В базе данных мнений о фильмах нет.'
+        # Если в базе пусто, при запросе к главной странице
+        # пользователь увидит ошибку 500:
+        abort(500)
     # Иначе выбирается случайное число в диапазоне от 0 до quantity...
     offset_value = randrange(quantity)
     # ...и определяется случайный объект:
@@ -93,6 +94,25 @@ def opinion_view(id):
     opinion = Opinion.query.get_or_404(id)
     # ...и передать его в шаблон (шаблон тот же, что и для главной страницы):
     return render_template('opinion.html', opinion=opinion)
+
+
+# Тут декорируется обработчик и указывается код нужной ошибки:
+@app.errorhandler(500)
+def internal_error(error):
+    # Ошибка 500 возникает в нештатных ситуациях на сервере. 
+    # Например, провалилась валидация данных.
+    # В таких случаях можно откатить изменения, не зафиксированные в БД,
+    # чтобы в базу не записалось ничего лишнего.
+    db.session.rollback()
+    # Пользователю вернётся страница, сгенерированная на основе шаблона 500.html.
+    # Этого шаблона пока нет, но сейчас мы его тоже создадим.
+    # Пользователь получит и код HTTP-ответа 500.
+    return render_template('500.html'), 500
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
 
 
 if __name__ == '__main__':
