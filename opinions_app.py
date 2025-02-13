@@ -1,10 +1,13 @@
+import csv
 from datetime import datetime
 # Импортируется функция для выбора случайного значения:
 from random import randrange
 
+import click
 from flask import Flask, abort, flash, redirect, render_template, url_for
 # Импортируем класс для работы с ORM:
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, URLField
 from wtforms.validators import DataRequired, Length, Optional
@@ -16,6 +19,7 @@ app.config['SECRET_KEY'] = 'A7jLs9hTqW3zV8dU'
 # Создаём экземпляр SQLAlchemy и в качестве параметра
 # передаём в него экземпляр приложения Flask:
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 
 class Opinion(db.Model):
@@ -24,6 +28,7 @@ class Opinion(db.Model):
     text = db.Column(db.Text, unique=True, nullable=False)
     source = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    added_by = db.Column(db.String(64))
 
 
 # Класс формы опишите сразу после модели Opinion.
@@ -113,6 +118,25 @@ def internal_error(error):
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template('404.html'), 404
+
+
+@app.cli.command('load_opinions')
+def load_opinions_command():
+    """Функция загрузки мнений в базу данных."""
+    with open('opinions.csv', encoding='utf-8') as f:
+        # Создаём итерируемый объект, который отображает каждую строку
+        # в качестве словаря с ключами из шапки файла:
+        reader = csv.DictReader(f)
+        # Для подсчёта строк добавляем счётчик:
+        counter = 0
+        for row in reader:
+            # Распакованный словарь используем
+            # для создания экземпляра модели Opinion:
+            opinion = Opinion(**row)
+            db.session.add(opinion)
+            db.session.commit()
+            counter += 1
+    click.echo(f'Загружено мнений: {counter}')
 
 
 if __name__ == '__main__':
