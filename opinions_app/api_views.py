@@ -1,7 +1,9 @@
 from flask import jsonify, request
+from random import randrange
 
 from . import app, db
 from .models import Opinion
+from .views import random_opinion
 
 
 # Явно разрешаем метод GET:
@@ -56,3 +58,9 @@ def add_opinion():
     db.session.add(opinion)
     db.session.commit()
     return jsonify({'opinion': opinion.to_dict()}), 201
+
+
+@app.route('/api/get-random-opinion/', methods=['GET'])
+def get_random_opinion():
+    opinion = random_opinion()
+    return jsonify({'opinion': opinion.to_dict()}), 200
